@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff"><title>献立メーカー</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f5f7;color:#222;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif}
+header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #ddd;padding:12px}
+h1{font-size:20px;margin:0 0 10px}button,select,input{font:inherit}button{border:1px solid #ccc;background:#fff;border-radius:10px;padding:9px 12px}
+.nav{display:flex;gap:8px;align-items:center}#title{flex:1;text-align:center;font-weight:700}
+main{max-width:1100px;margin:auto;padding:12px}.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.meal{background:#fff;border-radius:15px;margin:12px 0;padding:14px;box-shadow:0 1px 4px #0001}
+.meal h2{margin:0 0 10px;font-size:18px}.item{border-top:1px solid #eee;padding:10px 0}
+.item:first-of-type{border-top:0}.grid{display:grid;grid-template-columns:1.2fr 1fr 110px;gap:8px;align-items:start}
+input{width:100%;border:1px solid #ddd;border-radius:8px;padding:7px}.small{font-size:12px;color:#777;margin-bottom:4px}
+.actions{display:flex;gap:6px;margin-top:8px}.danger{color:#a00}.primary{background:#222;color:#fff;border-color:#222}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.quantity{max-width:180px}}
+</style></head>
+<body>
+<header><h1>🍚 献立メーカー</h1><div class="nav">
+<button onclick="move(-1)">‹</button><div id="title"></div><button onclick="move(1)">›</button>
+</div></header>
+<main>
+<div class="toolbar">
+<button class="primary" onclick="random10()">🔀 10日分ランダム</button>
+<button onclick="save()">💾 保存</button>
+<button onclick="resetData()">↩ 元に戻す</button>
+</div>
+<div id="status" style="font-size:13px;color:#777;margin:4px 2px 10px"></div>
+<div id="app"></div>
+</main>
+<script>
+const original=[{"date": "9/20", "weekday": "日", "meals": {"朝": [{"menu": "納豆（ネギ）", "ingredients": "納豆", "quantity": "3束"}, {"menu": "里芋とさつま揚げの煮物", "ingredients": "ネギ", "quantity": "1本"}, {"menu": "ピーマンしらす炒め", "ingredients": "里芋", "quantity": "一人2個"}, {"menu": "味噌汁（麩・とろろ昆布）", "ingredients": "さつま揚げ", "quantity": "3枚"}], "昼": [{"menu": "白身魚フライ・チキンナゲット", "ingredients": "白身魚フライ", "quantity": "人数分"}, {"menu": "炙り豆腐（豆腐・人参・鶏ひき肉・卵）", "ingredients": "チキンナゲット", "quantity": "2個/人"}, {"menu": "胡瓜の浅漬け", "ingredients": "豆腐", "quantity": "適量"}, {"menu": "すまし汁（ワンタン・長ネギ）", "ingredients": "人参", "quantity": "1本"}, {"menu": "果物", "ingredients": "鶏ひき肉", "quantity": "1丁"}], "夕": [{"menu": "野菜炒め", "ingredients": "豚肉", "quantity": "適量"}, {"menu": "さつま芋煮", "ingredients": "ニラ", "quantity": "適量"}, {"menu": "胡瓜ともずく酢和え", "ingredients": "人参", "quantity": "1本"}, {"menu": "すまし汁（キャベツ・えのき）", "ingredients": "もやし", "quantity": "適量"}, {"menu": "果物", "ingredients": "さつま芋", "quantity": "適量"}]}}, {"date": "9/21", "weekday": "月", "meals": {"朝": [{"menu": "魚肉ソーセージとピーマン炒め", "ingredients": "魚肉ソーセージ", "quantity": "2本"}, {"menu": "絹揚げのしめじあんかけ煮", "ingredients": "ピーマン", "quantity": "4個"}, {"menu": "キャベツの塩昆布和え", "ingredients": "絹揚げ", "quantity": "1袋"}, {"menu": "味噌汁（じゃが芋・わかめ）", "ingredients": "しめじ", "quantity": "1袋"}], "昼": [{"menu": "野菜炒め", "ingredients": "豚肉", "quantity": "適量"}, {"menu": "さつまいも煮", "ingredients": "キャベツ", "quantity": "1/4個"}, {"menu": "胡瓜のもずく酢和え", "ingredients": "玉ねぎ", "quantity": "2個"}, {"menu": "澄まし汁（ワンタン・ネギ）", "ingredients": "人参", "quantity": "1本"}, {"menu": "果物", "ingredients": "さつま芋", "quantity": "1本"}], "夕": [{"menu": "生姜焼", "ingredients": "豚肉", "quantity": "適量"}, {"menu": "煮豆", "ingredients": "玉ねぎ", "quantity": "1個"}, {"menu": "白菜のおひたし", "ingredients": "生姜", "quantity": "適量"}, {"menu": "味噌汁（ニラ・豆腐）", "ingredients": "煮豆", "quantity": "適宜"}]}}, {"date": "9/22", "weekday": "火", "meals": {"朝": [{"menu": "とろろ（海苔）", "ingredients": "とろろ芋", "quantity": "3袋"}, {"menu": "ミートボール", "ingredients": "海苔", "quantity": "適量"}, {"menu": "ほうれん草のなめ茸和え", "ingredients": "ミートボール", "quantity": "3個/人"}, {"menu": "味噌汁（じゃが芋・わかめ）", "ingredients": "ほうれん草", "quantity": "適量"}], "昼": [{"menu": "五目飯", "ingredients": "五目飯の素", "quantity": "2箱"}, {"menu": "焼き魚（鮭）", "ingredients": "鮭の切り身", "quantity": "人数分"}, {"menu": "かぼちゃのいとこ煮", "ingredients": "冷凍かぼちゃ", "quantity": "2個/人"}, {"menu": "胡瓜ともずく酢和え", "ingredients": "小豆缶", "quantity": "1缶"}, {"menu": "すまし汁（キャベツ・えのき）", "ingredients": "胡瓜", "quantity": "2本"}, {"menu": "果物", "ingredients": "もずく酢", "quantity": "3束"}], "夕": [{"menu": "親子煮", "ingredients": "鶏肉", "quantity": "適量"}, {"menu": "もやしとカニカマのポン酢和え", "ingredients": "玉ねぎ", "quantity": "1個"}, {"menu": "かぼちゃ煮", "ingredients": "卵", "quantity": "適量"}, {"menu": "すまし汁（人参・大根）", "ingredients": "もやし", "quantity": "1袋"}]}}, {"date": "9/23", "weekday": "水", "meals": {"朝": [{"menu": "納豆（ネギ）", "ingredients": "納豆", "quantity": "3束"}, {"menu": "ハンペンとえのきのバター焼き", "ingredients": "ネギ", "quantity": "1本"}, {"menu": "ほうれん草のなめ茸和え", "ingredients": "ハンペン", "quantity": "1袋"}, {"menu": "味噌汁（わかめ・麩）", "ingredients": "えのき", "quantity": "1袋"}], "昼": [{"menu": "白身魚フライ・チキンナゲット", "ingredients": "白身魚フライ", "quantity": "人数分"}, {"menu": "炙り豆腐（豆腐・人参・鶏ひき肉・卵）", "ingredients": "チキンナゲット", "quantity": "2個/人"}, {"menu": "胡瓜の浅漬け", "ingredients": "豆腐", "quantity": "適量"}, {"menu": "すまし汁（ワンタン・長ネギ）", "ingredients": "人参", "quantity": "1本"}, {"menu": "果物", "ingredients": "鶏ひき肉", "quantity": "1丁"}], "夕": [{"menu": "親子煮", "ingredients": "鶏肉", "quantity": "適量"}, {"menu": "もやしとカニカマのポン酢和え", "ingredients": "玉ねぎ", "quantity": "1個"}, {"menu": "かぼちゃ煮", "ingredients": "卵", "quantity": "適量"}, {"menu": "すまし汁（人参・大根）", "ingredients": "もやし", "quantity": "1袋"}]}}, {"date": "9/24", "weekday": "木", "meals": {"朝": [{"menu": "スクランブルエッグ", "ingredients": "卵", "quantity": "人数分"}, {"menu": "ミートボール", "ingredients": "ミートボール", "quantity": "3個/人"}, {"menu": "ほうれん草のおかか和え", "ingredients": "ほうれん草", "quantity": "適量"}, {"menu": "味噌汁（玉ねぎ・わかめ）", "ingredients": "かつお節", "quantity": "適量"}], "昼": [{"menu": "カレー", "ingredients": "業務用カレー（中辛）", "quantity": "1箱"}, {"menu": "キャベツの塩昆布和え", "ingredients": "豚肉", "quantity": "適量"}, {"menu": "大根ゆかり漬け", "ingredients": "じゃが芋", "quantity": "5個"}, {"menu": "果物", "ingredients": "人参", "quantity": "1本"}], "夕": [{"menu": "煮魚", "ingredients": "いわし", "quantity": "3袋"}, {"menu": "もやしとピーマンのニンニク醤油炒め", "ingredients": "もやし", "quantity": "1袋"}, {"menu": "里芋とさつま揚げの煮物", "ingredients": "ピーマン", "quantity": "4個"}, {"menu": "味噌汁（大根・油揚げ）", "ingredients": "ニンニク醤油の素", "quantity": "適量"}]}}, {"date": "9/25", "weekday": "金", "meals": {"朝": [{"menu": "納豆（ネギ）", "ingredients": "納豆", "quantity": "3束"}, {"menu": "ハンペンとえのきのバター焼き", "ingredients": "ネギ", "quantity": "1本"}, {"menu": "ほうれん草のなめ茸和え", "ingredients": "ハンペン", "quantity": "1袋"}, {"menu": "味噌汁（わかめ・麩）", "ingredients": "えのき", "quantity": "1袋"}], "昼": [{"menu": "焼きそば", "ingredients": "焼きそば", "quantity": "3袋"}, {"menu": "紅しょうが添え", "ingredients": "豚肉", "quantity": "適量"}, {"menu": "胡瓜の浅漬け", "ingredients": "キャベツ", "quantity": "1/4個"}, {"menu": "茶碗蒸し", "ingredients": "人参", "quantity": "1本"}, {"menu": "中華スープ（ニラ・卵）", "ingredients": "もやし", "quantity": "1袋"}, {"menu": "果物", "ingredients": "紅しょうが", "quantity": "1袋"}], "夕": [{"menu": "かに玉", "ingredients": "かに玉の素", "quantity": "1袋"}, {"menu": "じゃが芋のカレーきんぴら", "ingredients": "カニカマ", "quantity": "1パック"}, {"menu": "キャベツの塩昆布和え", "ingredients": "卵", "quantity": "人数分"}, {"menu": "味噌汁（油揚げ・大根）", "ingredients": "じゃが芋", "quantity": "3個"}]}}, {"date": "9/26", "weekday": "土", "meals": {"朝": [{"menu": "さんま缶の照り焼き", "ingredients": "さんま缶", "quantity": "4缶"}, {"menu": "里芋と人参の煮物", "ingredients": "里芋", "quantity": "2個/人"}, {"menu": "ブロッコリーのシラス和え", "ingredients": "人参", "quantity": "1本"}, {"menu": "味噌汁（なめこ・白菜）", "ingredients": "ブロッコリー", "quantity": "適量"}], "昼": [{"menu": "餃子", "ingredients": "餃子", "quantity": "3個/人"}, {"menu": "大根とさつま揚げのきんぴら", "ingredients": "大根", "quantity": "1/4本"}, {"menu": "白菜の胡麻和え", "ingredients": "さつま揚げ", "quantity": "2枚"}, {"menu": "味噌汁（人参・玉ねぎ）", "ingredients": "白菜", "quantity": "1/4個"}], "夕": [{"menu": "かに玉", "ingredients": "かに玉の素", "quantity": "1袋"}, {"menu": "かぼちゃのいとこ煮", "ingredients": "カニカマ", "quantity": "1パック"}, {"menu": "茄子の煮浸し", "ingredients": "卵", "quantity": "適量"}, {"menu": "味噌汁（大根・白菜）", "ingredients": "冷凍かぼちゃ", "quantity": "2個/人"}]}}, {"date": "9/27", "weekday": "日", "meals": {"朝": [{"menu": "ベーコンとしめじのバター炒め", "ingredients": "ベーコン", "quantity": "2パック"}, {"menu": "車麩と玉ねぎの卵とじ", "ingredients": "しめじ", "quantity": "1袋"}, {"menu": "ブロッコリーしらす炒め", "ingredients": "車麩", "quantity": "適量"}, {"menu": "味噌汁（油揚げ・わかめ）", "ingredients": "玉ねぎ", "quantity": "1個"}], "昼": [{"menu": "焼きそば", "ingredients": "焼きそば", "quantity": "3袋"}, {"menu": "紅しょうが添え", "ingredients": "豚肉", "quantity": "適量"}, {"menu": "胡瓜の浅漬け", "ingredients": "キャベツ", "quantity": "1/4個"}, {"menu": "茶碗蒸し", "ingredients": "人参", "quantity": "1本"}, {"menu": "中華スープ（ニラ・卵）", "ingredients": "もやし", "quantity": "1袋"}, {"menu": "果物", "ingredients": "紅しょうが", "quantity": "1袋"}], "夕": [{"menu": "餃子", "ingredients": "餃子", "quantity": "3個/人"}, {"menu": "大根とさつま揚げのきんぴら", "ingredients": "大根", "quantity": "1/4本"}, {"menu": "白菜の胡麻和え", "ingredients": "さつま揚げ", "quantity": "2枚"}, {"menu": "味噌汁（人参・玉ねぎ）", "ingredients": "白菜", "quantity": "1/4個"}]}}, {"date": "9/28", "weekday": "月", "meals": {"朝": [{"menu": "煮豆・梅干し・昆布の佃煮", "ingredients": "煮豆", "quantity": "適量"}, {"menu": "絹揚げのしめじあんかけ煮", "ingredients": "梅干し", "quantity": "人数分"}, {"menu": "（写真で一部判読困難）", "ingredients": "昆布", "quantity": "適量"}], "昼": [{"menu": "ロールパン", "ingredients": "ロールパン", "quantity": "2個/人"}, {"menu": "ビーフシチュー", "ingredients": "シチューの素", "quantity": "1箱"}, {"menu": "コールスローサラダ", "ingredients": "豚肉", "quantity": "適量"}, {"menu": "胡瓜の生姜和え", "ingredients": "じゃが芋", "quantity": "5個"}, {"menu": "果物", "ingredients": "人参", "quantity": "1本"}], "夕": [{"menu": "餃子", "ingredients": "餃子", "quantity": "3個/人"}, {"menu": "大根とさつま揚げのきんぴら", "ingredients": "大根", "quantity": "1/4本"}, {"menu": "白菜の胡麻和え", "ingredients": "さつま揚げ", "quantity": "2枚"}, {"menu": "味噌汁（人参・玉ねぎ）", "ingredients": "白菜", "quantity": "1/4個"}]}}, {"date": "9/29", "weekday": "火", "meals": {"朝": [{"menu": "スクランブルエッグ", "ingredients": "卵", "quantity": "人数分"}, {"menu": "ミートボール", "ingredients": "ミートボール", "quantity": "3個/人"}, {"menu": "ほうれん草のおかか和え", "ingredients": "ほうれん草", "quantity": "適量"}, {"menu": "味噌汁（玉ねぎ・わかめ）", "ingredients": "かつお節", "quantity": "適量"}], "昼": [{"menu": "うどん", "ingredients": "うどん", "quantity": "3P"}, {"menu": "天かす・ちくわ・大揚", "ingredients": "天かす", "quantity": "1袋"}, {"menu": "大根とさつま揚げのきんぴら", "ingredients": "ちくわ", "quantity": "2P"}, {"menu": "冷奴", "ingredients": "大揚", "quantity": "1束"}, {"menu": "果物", "ingredients": "大根", "quantity": "1/4本"}], "夕": [{"menu": "鶏肉の煮物", "ingredients": "鶏モモ肉", "quantity": "適量"}, {"menu": "胡瓜の塩昆布和え", "ingredients": "人参", "quantity": "1本"}, {"menu": "玉子豆腐", "ingredients": "大根", "quantity": "1/4個"}, {"menu": "味噌汁（茄子・じゃが芋）", "ingredients": "胡瓜", "quantity": "1本"}]}}];
+function validDays(x){
+  return Array.isArray(x) && x.length===10 &&
+    x.every(d=>d && d.meals && ['朝','昼','夕'].every(k=>Array.isArray(d.meals[k])));
+}
+let saved=null;
+try{ saved=JSON.parse(localStorage.getItem('menuDays')||'null'); }catch(e){ saved=null; }
+let days=validDays(saved) ? saved : JSON.parse(JSON.stringify(original));
+let idx=0;
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function render(){
+ const d=days[idx];
+ document.getElementById('title').textContent=d.date+'（'+d.weekday+'）';
+ document.getElementById('status').textContent='10日分の献立を表示中';
+ const app=document.getElementById('app');app.innerHTML='';
+ ['朝','昼','夕'].forEach(k=>{
+  const sec=document.createElement('section');sec.className='meal';
+  sec.innerHTML='<h2>'+k+'食</h2>';
+  d.meals[k].forEach((x,i)=>{
+   const div=document.createElement('div');div.className='item';
+   div.innerHTML='<div class="grid"><div><div class="small">メニュー</div><input value="'+esc(x.menu)+'" data-k="'+k+'" data-i="'+i+'" data-f="menu"></div>'+
+   '<div><div class="small">材料</div><input value="'+esc(x.ingredients)+'" data-k="'+k+'" data-i="'+i+'" data-f="ingredients"></div>'+
+   '<div><div class="small">数量</div><input class="quantity" value="'+esc(x.quantity)+'" data-k="'+k+'" data-i="'+i+'" data-f="quantity"></div></div>'+
+   '<div class="actions"><button class="danger" onclick="delItem(\''+k+'\','+i+')">この品を削除</button></div>';
+   sec.appendChild(div);
+  });
+  const add=document.createElement('button');add.textContent='＋ 品目を追加';add.onclick=()=>addItem(k);sec.appendChild(add);
+  app.appendChild(sec);
+ });
+ document.querySelectorAll('input[data-f]').forEach(el=>el.onchange=()=>{
+  days[idx].meals[el.dataset.k][+el.dataset.i][el.dataset.f]=el.value;save();
+ });
+}
+function move(n){idx=(idx+n+days.length)%days.length;render();}
+function addItem(k){days[idx].meals[k].push({menu:'新しいメニュー',ingredients:'材料',quantity:'数量'});save();render();}
+function delItem(k,i){days[idx].meals[k].splice(i,1);save();render();}
+function save(){localStorage.setItem('menuDays',JSON.stringify(days));}
+function resetData(){if(confirm('編集内容を元に戻しますか？')){days=JSON.parse(JSON.stringify(original));save();render();}}
+function random10(){
+  const keys=['朝','昼','夕'];
+  const pools={朝:[],昼:[],夕:[]};
+  original.forEach(d=>keys.forEach(k=>pools[k].push(d.meals[k])));
+  const result=[];
+  for(let i=0;i<10;i++){
+    const d={date:original[i].date,weekday:original[i].weekday,meals:{}};
+    keys.forEach(k=>{
+      let candidates=pools[k].filter((_,j)=>i===0 || JSON.stringify(pools[k][j])!==JSON.stringify(result[i-1].meals[k]));
+      if(!candidates.length) candidates=pools[k];
+      d.meals[k]=JSON.parse(JSON.stringify(candidates[Math.floor(Math.random()*candidates.length)]));
+    });
+    result.push(d);
+  }
+  days=result; save(); idx=0; render();
+}
+render();
+</script></body></html>
